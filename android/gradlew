@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+set -eu
+GV=8.13
+GRADLE_USER_HOME="${GRADLE_USER_HOME:-$HOME/.gradle}"
+GD="$GRADLE_USER_HOME/medical-card-gradle/gradle-$GV"
+if [ ! -x "$GD/bin/gradle" ]; then
+  mkdir -p "$GRADLE_USER_HOME/medical-card-gradle"
+  ZIP="$GRADLE_USER_HOME/medical-card-gradle/gradle-dist.zip"
+  echo "Downloading Gradle $GV from the official Gradle distribution service..."
+  if command -v curl >/dev/null 2>&1; then curl -fL --retry 2 "https://services.gradle.org/distributions/gradle-$GV-bin.zip" -o "$ZIP"
+  elif command -v wget >/dev/null 2>&1; then wget "https://services.gradle.org/distributions/gradle-$GV-bin.zip" -O "$ZIP"
+  else echo 'Install curl or wget, then retry.' >&2; exit 1; fi
+  unzip -q -o "$ZIP" -d "$GRADLE_USER_HOME/medical-card-gradle"
+  rm -f "$ZIP"
+fi
+exec "$GD/bin/gradle" "$@"
