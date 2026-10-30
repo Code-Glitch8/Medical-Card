@@ -1,0 +1,37 @@
+{
+  "name": "medical-card-desktop",
+  "productName": "Medical Card",
+  "version": "1.0.0",
+  "description": "Emergency Medical Records — Medical Card (Windows desktop)",
+  "author": "Medical Card",
+  "private": true,
+  "main": "src/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "build:web": "node ../tools/build-web.mjs windows",
+    "dist": "npm run build:web && electron-builder --win nsis --x64"
+  },
+  "devDependencies": {
+    "electron": "^39.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.medicalcard.desktop",
+    "productName": "Medical Card",
+    "copyright": "Medical Card",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["src/**/*", "app-web/**/*", "package.json"],
+    "asar": true,
+    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "icon": "build/icon.png" },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createStartMenuShortcut": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Medical Card",
+      "artifactName": "MedicalCardSetup.${ext}",
+      "deleteAppDataOnUninstall": true
+    }
+  }
+}

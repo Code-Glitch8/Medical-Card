@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'">
+<title>Medical Card</title>
+<style>
+ :root{color-scheme:light dark;font-family:Segoe UI,system-ui,sans-serif}
+ body{margin:0;padding:18px;display:flex;flex-direction:column;gap:12px;height:100vh;box-sizing:border-box}
+ #msg{white-space:pre-wrap;margin:0;font-size:14px;line-height:1.45}
+ input,select{font:inherit;padding:8px;width:100%;box-sizing:border-box}
+ #list{flex:1;overflow:auto;border:1px solid #8885;border-radius:6px}
+ .port{display:block;width:100%;text-align:left;padding:10px 12px;border:0;border-bottom:1px solid #8883;background:none;font:inherit;color:inherit;cursor:pointer}
+ .port:hover,.port:focus{background:#2b7de933;outline:none}
+ .row{display:flex;gap:8px;justify-content:flex-end}
+ button.act{font:inherit;padding:7px 16px;cursor:pointer}
+</style></head>
+<body>
+ <p id="msg"></p>
+ <input id="val" hidden autocomplete="off" spellcheck="false">
+ <div id="list" hidden></div>
+ <div class="row"><button class="act" id="cancel">Cancel</button><button class="act" id="ok" hidden>OK</button></div>
+ <script src="dialog.js"></script>
+</body></html>
