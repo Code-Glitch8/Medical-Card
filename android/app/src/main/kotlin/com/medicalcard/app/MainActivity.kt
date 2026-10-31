@@ -173,7 +173,8 @@ class MainActivity : ComponentActivity() {
                 safeBrowsingEnabled = true
             }
             ViewCompat.setOnApplyWindowInsetsListener(this) { v, insets ->
-                val i = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime())
+                al safeAreas = WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.ime()
+                val i = insets.getInsets(safeAreas)
                 v.setPadding(i.left, i.top, i.right, i.bottom)
                 WindowInsetsCompat.CONSUMED
             }
