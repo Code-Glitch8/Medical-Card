@@ -6,6 +6,7 @@
  */
 (function () {
   'use strict';
+  window.__mcPlatform = 'android';
   var bridge = window.McNative;
   if (!bridge || typeof bridge.postMessage !== 'function') return;
 
@@ -20,8 +21,19 @@
       listeners.push(l);
     });
   }
+  // Edge Functions through the native HTTPS stack (see native/common.js). One request id per call.
+  var edgeWaiters = {}, edgeSeq = 0;
+  window.__mcEdgeNative = function (fn, body, apikey, timeoutMs) {
+    return new Promise(function (resolve, reject) {
+      var id = 'e' + (++edgeSeq);
+      var t = setTimeout(function () { delete edgeWaiters[id]; reject(new DOMException('timed out', 'TimeoutError')); }, timeoutMs + 5000);
+      edgeWaiters[id] = function (m) { clearTimeout(t); if (m.error) reject(new DOMException(m.error, m.error === 'timeout' ? 'TimeoutError' : 'NetworkError')); else resolve({ status: m.status, text: m.body }); };
+      send({ op: 'edge', id: id, fn: fn, body: JSON.stringify(body), apikey: apikey, timeoutMs: timeoutMs });
+    });
+  };
   bridge.onmessage = function (e) {
     var m; try { m = JSON.parse(e.data); } catch (_) { return; }
+    if (m.ev === 'edge') { var w = edgeWaiters[m.id]; if (w) { delete edgeWaiters[m.id]; w(m); } return; }
     if (m.ev === 'data') { if (current) current._push(m.b64); return; }
     if (m.ev === 'closed') { if (current) current._lost(m.error || ''); return; }
     for (var i = 0; i < listeners.length; i++) if (listeners[i](m)) return;
@@ -34,7 +46,14 @@
     this._address = address; this._ctrl = null; this._open = false;
     this.readable = null; this.writable = null;
   }
-  BtPort.prototype._push = function (b64) { if (this._ctrl) { try { this._ctrl.enqueue(b64ToBytes(b64)); } catch (_) {} } };
+  // Bounded queue: if the page stops reading, never grow without limit (64 KiB), drop the link instead.
+  BtPort.prototype._push = function (b64) {
+    if (!this._ctrl) return;
+    try {
+      if (this._ctrl.desiredSize !== null && this._ctrl.desiredSize < -65536) { send({ op: 'close' }); this._lost('Reader data overflow.'); return; }
+      this._ctrl.enqueue(b64ToBytes(b64));
+    } catch (_) {}
+  };
   BtPort.prototype._lost = function (reason) {
     if (!this._open) return;
     this._open = false;
@@ -52,7 +71,7 @@
     if (baud === 115200) {
       return Promise.reject(new DOMException('USB serial is not supported on Android. Select 9600 baud and connect the HC-05 Bluetooth reader.', 'NotSupportedError'));
     }
-    var pending = waitFor(['opened', 'open_failed'], 20000);
+    var pending = waitFor(['opened', 'open_failed', 'pick_failed'], 45000);
     send({ op: 'open', address: self._address });
     return pending.then(function (m) {
       if (m.ev !== 'opened') throw new DOMException(m.error || 'Could not connect to the Bluetooth reader.', 'NetworkError');

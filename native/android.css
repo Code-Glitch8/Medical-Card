@@ -1,0 +1,26 @@
+/* Android: phone-first. Bottom navigation, compact top bar, big touch targets, no sidebar. */
+html.mc-android body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+html.mc-android.mc-kb body{padding-bottom:0}
+html.mc-android .appbar{position:sticky;top:0;z-index:30;padding:10px 14px;flex-wrap:wrap;gap:8px;border-radius:0 0 20px 20px;box-shadow:0 6px 20px #0a162855}
+html.mc-android .appbar .brand{font-size:15px;min-width:0;flex:1}
+html.mc-android .appbar .brand>div:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html.mc-android .appbar .row{width:100%;margin-left:0;display:flex;align-items:center;gap:8px;justify-content:space-between}
+html.mc-android #baudSelect{display:none}
+html.mc-android #lockBtn{margin-left:auto}
+html.mc-android #main{padding:16px 14px 24px;min-height:0}
+html.mc-android .pagehead h1{font-size:22px}
+html.mc-android .footer{display:none}
+html.mc-android .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px));left:12px;right:12px;max-width:none}
+html.mc-android .authwrap{padding:14px;gap:14px}
+html.mc-android #mainNav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:space-around;gap:0;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,var(--mc-nav2),var(--mc-nav));border-radius:20px 20px 0 0;box-shadow:0 -6px 24px #0a162888;transition:transform .22s var(--mc-ease)}
+html.mc-android.mc-kb #mainNav{transform:translateY(110%)}
+html.mc-android #mainNav button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 2px;background:none!important;color:#9db8e6;font-size:11px;font-weight:600;border-radius:14px;min-height:54px}
+html.mc-android #mainNav button[hidden]{display:none}
+html.mc-android #mainNav button.mc-active{color:#fff;background:#3b8cff2e!important}
+html.mc-android #mainNav button.mc-active .mc-ico{transform:translateY(-1px) scale(1.08)}
+html.mc-android #mainNav .mc-ico{transition:transform .2s var(--mc-ease)}
+html.mc-android #mainNav .mc-lbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+html.mc-android #appView.hidden~#mainNav{display:none}
+html.mc-android .form-actions{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom,0px));background:linear-gradient(0deg,var(--bg) 70%,transparent);padding-top:10px}
+html.mc-android.mc-kb .form-actions{bottom:0}
+html.mc-android input,html.mc-android select,html.mc-android textarea{font-size:16px}

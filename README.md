@@ -3,7 +3,9 @@
 Source for an Android app (APK) and a Windows desktop app (EXE installer) that wrap the **existing** website and
 talk to the **same** Supabase project. No backend, schema, RPC, RLS or Edge Function was changed.
 
-> **Build status (read first).** The sandbox this was written in has no access to the Android SDK, Maven, npm or
+> **v1.1.0 status:** see CHANGELOG.md, BUG_REPORT.md, TEST_REPORT.md. The v1.1.0 Kotlin/Electron changes are uncompiled; build via the GitHub Actions workflow.
+>
+> **Build status (original note).** The sandbox this was written in has no access to the Android SDK, Maven, npm or
 > Electron downloads, so **no APK and no EXE have been built yet**. Everything needed to build them is here, plus a
 > GitHub Actions workflow that produces both. See "Build" below. The Kotlin/Electron code has **not been compiled or run**.
 

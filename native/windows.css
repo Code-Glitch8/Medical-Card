@@ -1,0 +1,46 @@
+/* Windows: desktop software. Sidebar, custom title bar, dense tables, keyboard-first. */
+html.mc-windows{--mc-tb:36px;--mc-side:248px}
+html.mc-windows body{padding-top:var(--mc-tb)}
+#mcTitlebar{position:fixed;top:0;left:0;right:0;height:var(--mc-tb);z-index:100;display:flex;align-items:center;gap:9px;padding:0 150px 0 12px;background:#060d1a;color:#c9d8f5;font-size:12px;-webkit-app-region:drag;user-select:none;border-bottom:1px solid #ffffff10}
+#mcTitlebar .mc-tb-logo{width:18px;height:18px}#mcTitlebar .mc-tb-logo svg{width:100%;height:100%;display:block}
+#mcTitlebar .mc-tb-title{font-weight:700;letter-spacing:.04em;color:#fff}#mcTitlebar .mc-tb-sub{opacity:.6}
+html.mc-windows.mc-fullscreen #mcTitlebar{display:none}html.mc-windows.mc-fullscreen body{padding-top:0}
+html.mc-windows #appView:not(.hidden){display:block}
+html.mc-windows .appbar{position:fixed;top:var(--mc-tb);left:0;bottom:0;width:var(--mc-side);z-index:30;flex-direction:column;align-items:stretch;justify-content:flex-start;flex-wrap:nowrap;gap:18px;padding:18px 12px;overflow-y:auto;box-shadow:2px 0 18px #0a162833;background:linear-gradient(180deg,#0c1b36,#08111f)}
+html.mc-windows .appbar .brand{padding:0 6px;font-size:15px}
+html.mc-windows .appbar .brand>div:last-child{min-width:0;overflow-wrap:anywhere}
+html.mc-windows #mainNav{display:flex;flex-direction:column;gap:4px;flex:1}
+html.mc-windows #mainNav button{display:flex;align-items:center;gap:12px;justify-content:flex-start;text-align:left;background:none!important;color:#a9c0ea;padding:10px 12px;border-radius:10px;font-weight:600;position:relative}
+html.mc-windows #mainNav button[hidden]{display:none}
+html.mc-windows #mainNav button:hover{background:#ffffff12!important;color:#fff;filter:none}
+html.mc-windows #mainNav button.mc-active{background:#3b8cff29!important;color:#fff}
+html.mc-windows #mainNav button.mc-active::before{content:"";position:absolute;left:-12px;top:9px;bottom:9px;width:4px;border-radius:0 4px 4px 0;background:#3b8cff}
+html.mc-windows .appbar .row{margin:0;flex-direction:column;align-items:stretch;gap:8px}
+html.mc-windows .appbar .row>*{width:100%}
+html.mc-windows .baud-sel{max-width:none}
+html.mc-windows #main{margin-left:var(--mc-side);max-width:none;padding:28px 32px;min-height:calc(100vh - var(--mc-tb) - 40px)}
+html.mc-windows #main>*{max-width:1280px}
+html.mc-windows .footer{margin-left:var(--mc-side)}
+html.mc-windows .toast{bottom:20px;right:20px}
+html.mc-windows .authwrap{margin-top:2vh}
+html.mc-windows ::-webkit-scrollbar{width:12px;height:12px}html.mc-windows ::-webkit-scrollbar-thumb{background:#7f93b455;border-radius:8px;border:3px solid transparent;background-clip:content-box}html.mc-windows ::-webkit-scrollbar-thumb:hover{background:#7f93b499;background-clip:content-box;border:3px solid transparent}
+html.mc-windows tbody tr{transition:background-color .12s}html.mc-windows tbody tr:hover{background:#3b8cff14}
+@media(max-width:1000px){
+ html.mc-windows{--mc-side:72px}
+ html.mc-windows .appbar .brand>div:last-child,html.mc-windows #mainNav .mc-lbl,html.mc-windows .appbar .status span:last-child,html.mc-windows #baudSelect{display:none}
+ html.mc-windows #mainNav button{justify-content:center;padding:12px 0}
+ html.mc-windows .appbar .brand{justify-content:center}
+ html.mc-windows .appbar .row button{font-size:0;padding:0;min-height:36px}
+ html.mc-windows #headerConnectBtn::before{content:"⚡";font-size:16px}html.mc-windows #lockBtn::before{content:"⎋";font-size:16px}
+ html.mc-windows .appbar .status{justify-content:center}
+}
+@media(max-width:640px){
+ html.mc-windows{--mc-side:0px}html.mc-windows body{padding-bottom:70px}
+ html.mc-windows .appbar{top:auto;width:auto;right:0;bottom:0;height:auto;flex-direction:row;padding:6px;gap:0}
+ html.mc-windows .appbar .brand,html.mc-windows .appbar .row{display:none}
+ html.mc-windows #mainNav{flex-direction:row;justify-content:space-around;width:100%}
+ html.mc-windows #mainNav button{flex:1;flex-direction:column;gap:2px;font-size:11px}
+ html.mc-windows #mainNav .mc-lbl{display:block}
+ html.mc-windows #mainNav button.mc-active::before{display:none}
+ html.mc-windows #main{padding:18px 14px}
+}

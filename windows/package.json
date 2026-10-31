@@ -1,7 +1,7 @@
 {
   "name": "medical-card-desktop",
   "productName": "Medical Card",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Emergency Medical Records — Medical Card (Windows desktop)",
   "author": "Medical Card",
   "private": true,

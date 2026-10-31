@@ -32,6 +32,16 @@ jobs:
           node --check native/shim-windows.js
           for f in windows/src/*.cjs windows/src/dialog.js; do node --check "$f"; done
 
+      - name: Browser tests against the built bundles (fake native bridges, mocked Supabase)
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.49.1
+          npx playwright install --with-deps chromium
+          (cd android/app/src/main/assets && python3 -m http.server 8801 >/dev/null 2>&1 &)
+          (cd windows/app-web && python3 -m http.server 8802 >/dev/null 2>&1 &)
+          sleep 2
+          node native/test/shim-android.test.cjs http://127.0.0.1:8801/index.html
+          node native/test/app.test.cjs http://127.0.0.1:8801/index.html http://127.0.0.1:8802/index.html
+
   android:
     needs: web-checks
     runs-on: ubuntu-latest

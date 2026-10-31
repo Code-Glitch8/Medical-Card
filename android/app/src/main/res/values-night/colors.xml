@@ -1,3 +1,5 @@
 <resources>
-    <color name="window_bg">#0B1424</color>
+    <color name="window_bg">#0A1628</color>
+    <color name="icon_bg">#0A1628</color>
+    <color name="icon_fg">#FFFFFF</color>
 </resources>

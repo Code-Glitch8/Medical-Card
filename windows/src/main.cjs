@@ -1,10 +1,11 @@
 'use strict';
-const { app, BrowserWindow, Menu, ipcMain, protocol, session, shell } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, net, protocol, session, shell } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 
 const APP_ORIGIN = 'app://local';
 const SUPABASE_HOST = 'pkzzktnxiboottirasvc.supabase.co';
+const EDGE_FUNCTIONS = new Set(['register-hospital', 'login-with-id', 'request-password-reset']);
 const WEB_ROOT = path.join(__dirname, '..', 'app-web');
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.json': 'application/json; charset=utf-8' };
@@ -55,10 +56,41 @@ ipcMain.on('mc:prompt', async (event, message, defaultValue) => {
   event.returnValue = v;                                         // string, or null when cancelled
 });
 
+// Edge Functions (Login ID sign-in, hospital registration, password reset) through Chromium's network stack in the
+// MAIN process: no renderer Origin, so no browser CORS allow-list can reject the request. Only our own project and
+// the three known functions are reachable; bodies/responses are size-capped and never logged.
+ipcMain.handle('mc:edge', async (event, fn, body, apikey, timeoutMs) => {
+  if (!isTrustedFrame(event.senderFrame)) throw new Error('forbidden');
+  if (!EDGE_FUNCTIONS.has(fn) || typeof body !== 'string' || body.length > 16384 ||
+      typeof apikey !== 'string' || apikey.length < 20 || apikey.length > 600 || apikey.split('.').length !== 3) throw new Error('bad_request');
+  const t = Math.min(Math.max(Number(timeoutMs) || 25000, 5000), 60000);
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), t);
+  try {
+    const res = await net.fetch(`https://${SUPABASE_HOST}/functions/v1/${fn}`, {
+      method: 'POST', body, signal: ac.signal, redirect: 'error',
+      headers: { 'content-type': 'application/json', accept: 'application/json', apikey, authorization: 'Bearer ' + apikey },
+    });
+    const text = await res.text();
+    if (text.length > 262144) throw new Error('too large');
+    return { status: res.status, text };
+  } catch (e) {
+    const err = new Error(ac.signal.aborted ? 'timed out' : 'network'); err.name = ac.signal.aborted ? 'TimeoutError' : 'NetworkError'; throw err;
+  } finally { clearTimeout(timer); }
+});
+
+function sendWindowState() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.webContents.send('mc:window-state', { maximized: mainWindow.isMaximized(), fullscreen: mainWindow.isFullScreen() });
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1280, height: 860, minWidth: 360, minHeight: 560, show: false, autoHideMenuBar: true,
-    title: 'Emergency Medical Records — Medical Card', backgroundColor: '#0b1424',
+    width: 1280, height: 860, minWidth: 360, minHeight: 520, show: false, autoHideMenuBar: true,
+    title: 'Emergency Medical Records — Medical Card', backgroundColor: '#0a1628',   // navy, never a white flash
+    icon: path.join(__dirname, '..', 'build', 'icon.png'),
+    titleBarStyle: 'hidden',                                                          // custom title bar + native window controls
+    titleBarOverlay: { color: '#060d1a', symbolColor: '#c9d8f5', height: 36 },
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true, nodeIntegration: false, sandbox: true, webSecurity: true,
@@ -66,6 +98,8 @@ function createWindow() {
     },
   });
   mainWindow.once('ready-to-show', () => mainWindow.show());
+  ['maximize', 'unmaximize', 'enter-full-screen', 'leave-full-screen', 'restore'].forEach((ev) => mainWindow.on(ev, sendWindowState));
+  mainWindow.webContents.on('did-finish-load', sendWindowState);
   mainWindow.on('closed', () => { mainWindow = null; });
   const wc = mainWindow.webContents;
   wc.setWindowOpenHandler(({ url }) => { openExternalIfHttps(url); return { action: 'deny' }; });
@@ -77,7 +111,7 @@ function createWindow() {
 app.whenReady().then(() => {
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     { label: 'Edit', submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
-    { label: 'View', submenu: [{ role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { type: 'separator' }, { role: 'togglefullscreen' }] },
+    { label: 'View', submenu: [{ role: 'resetZoom', accelerator: 'Ctrl+0' }, { role: 'zoomIn', accelerator: 'Ctrl+Plus' }, { role: 'zoomOut', accelerator: 'Ctrl+-' }, { type: 'separator' }, { role: 'togglefullscreen' }] },
   ]));
 
   // Serve the bundled web app from app://local/. Path traversal is rejected; responses are never cached.

@@ -1,0 +1,56 @@
+/* Shared Medical Card native design language: dark navy + blue, rounded cards, soft shadows. */
+:root{--teal:#2563eb;--teal2:#e3edff;--navy:#0f2140;--bg:#eef3fb;--line:#d9e3f2;--shadow:0 6px 24px #0a162814,0 1px 3px #0a16280d;--mc-nav:#0a1628;--mc-nav2:#12264a;--mc-acc:#3b8cff;--mc-ease:cubic-bezier(.2,.8,.2,1)}
+:root.dark-theme{--teal:#4da3ff;--teal2:#10294d;--navy:#dbe7ff;--bg:#070f1d;--white:#0e1b33;--line:#22365a;--shadow:0 8px 28px #0000004d}
+html.mc-app{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+html.mc-app body{font-family:"Segoe UI Variable","Segoe UI",Inter,Roboto,system-ui,sans-serif;letter-spacing:.005em;overflow-x:hidden}
+html.mc-app .card{border-radius:18px;border-color:var(--line)}
+html.mc-app button{border-radius:12px;min-height:40px;transition:transform .12s var(--mc-ease),filter .15s,background-color .15s}
+html.mc-app button:active:not(:disabled){transform:scale(.97)}
+html.mc-app button.small{min-height:34px}
+html.mc-app button:not(.secondary):not(.ghost):not(.danger){background:linear-gradient(135deg,#3b8cff,#1f5fe0)}
+html.mc-app button:disabled{opacity:.6;cursor:default}
+html.mc-app .field input,html.mc-app .field select,html.mc-app .field textarea{border-radius:12px;min-height:44px;border-color:#c4d2e8}
+html.mc-app .field input:focus,html.mc-app .field select:focus,html.mc-app .field textarea:focus{outline:none;border-color:var(--mc-acc);box-shadow:0 0 0 3px #3b8cff33}
+html.mc-app .appbar{background:linear-gradient(180deg,var(--mc-nav),var(--mc-nav2))}
+html.mc-app .logo{background:none;width:38px;height:38px;border-radius:11px;overflow:hidden;box-shadow:0 2px 10px #1747b866}
+html.mc-app .logo svg{width:100%;height:100%;display:block}
+html.mc-app .authhero{background:linear-gradient(160deg,var(--mc-nav),var(--mc-nav2));color:#fff;border-radius:22px}
+html.mc-app .authhero h1,html.mc-app .authhero p,html.mc-app .authhero .brand{color:#fff}
+html.mc-app .spin{border-color:#ffffff55;border-top-color:#fff}
+.mc-ico{width:22px;height:22px;flex:0 0 22px}
+#main.mc-enter{animation:mcIn .28s var(--mc-ease)}
+@keyframes mcIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+/* Empty/loading polish */
+html.mc-app .empty{border-radius:16px}
+/* Tables never push the page wider than the screen */
+html.mc-app #main .card{overflow-x:auto}
+html.mc-app table{border-collapse:separate;border-spacing:0}
+html.mc-app th{position:sticky;top:0}
+@media(max-width:700px){
+ html.mc-app table.mc-table,html.mc-app table.mc-table tbody,html.mc-app table.mc-table tr,html.mc-app table.mc-table td{display:block;width:100%}
+ html.mc-app table.mc-table thead{display:none}
+ html.mc-app table.mc-table tr{border:1px solid var(--line);border-radius:14px;padding:6px 12px;margin-bottom:10px;background:var(--white)}
+ html.mc-app table.mc-table td{border:0!important;padding:6px 0;display:flex;gap:12px;justify-content:space-between;text-align:right;max-width:none!important;min-width:0!important;overflow-wrap:anywhere}
+ html.mc-app table.mc-table td::before{content:attr(data-label);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:left;flex:0 0 38%}
+ html.mc-app .grid.two,html.mc-app .grid.three,html.mc-app .formgrid{grid-template-columns:1fr}
+ html.mc-app .analytics-metrics{grid-template-columns:1fr 1fr}
+}
+/* Splash (shared) */
+#mcSplash{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;background:radial-gradient(120% 90% at 50% 38%,#12306a 0%,#0a1628 55%,#060d1a 100%);color:#fff;transition:opacity .38s ease;font-family:"Segoe UI Variable","Segoe UI",Roboto,system-ui,sans-serif}
+#mcSplash.mc-out{opacity:0;pointer-events:none}
+#mcSplash .mc-mark{position:relative;width:112px;height:112px;display:grid;place-items:center}
+#mcSplash .mc-mark svg{width:84px;height:84px;position:relative;z-index:2;animation:mcLogo .7s var(--mc-ease) both;filter:drop-shadow(0 8px 24px #1f5fe080)}
+#mcSplash .mc-ring{position:absolute;inset:0;border-radius:50%;border:2px solid #3b8cff;opacity:0;animation:mcPulse 1.8s ease-out .35s infinite}
+#mcSplash .mc-ring.r2{animation-delay:1s}
+#mcSplash .mc-scan{position:absolute;inset:6px;border-radius:50%;border:2px solid transparent;border-top-color:#6fb0ff;animation:mcSpin 1.4s linear infinite;opacity:.8}
+#mcSplash h1{margin:30px 0 4px;font-size:24px;font-weight:700;letter-spacing:.28em;animation:mcUp .6s var(--mc-ease) .45s both}
+#mcSplash p{margin:0;font-size:11px;letter-spacing:.3em;color:#9db8e6;animation:mcUp .6s var(--mc-ease) .6s both}
+#mcSplash .mc-bar{margin-top:38px;width:140px;height:3px;border-radius:3px;background:#ffffff22;overflow:hidden;animation:mcUp .5s ease .8s both}
+#mcSplash .mc-bar i{display:block;height:100%;width:40%;border-radius:3px;background:linear-gradient(90deg,transparent,#6fb0ff,transparent);animation:mcBar 1.1s ease-in-out infinite}
+@keyframes mcLogo{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}
+@keyframes mcUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes mcPulse{0%{opacity:.55;transform:scale(.7)}100%{opacity:0;transform:scale(1.6)}}
+@keyframes mcSpin{to{transform:rotate(360deg)}}
+@keyframes mcBar{from{transform:translateX(-120%)}to{transform:translateX(360%)}}
+@media(prefers-reduced-motion:reduce){#mcSplash .mc-ring,#mcSplash .mc-scan,#mcSplash .mc-bar i{animation:none}#mcSplash *{animation-duration:.01s!important;animation-delay:0s!important}#main.mc-enter{animation:none}}
+html.mc-app .appbar button.secondary{background:#ffffff1f;color:#e6efff}html.mc-app .appbar button.secondary:hover{background:#ffffff33}

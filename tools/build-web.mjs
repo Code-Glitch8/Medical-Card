@@ -6,7 +6,7 @@
 //     (same pinned version the site uses: 2.45.4) so the app has no CDN dependency
 //   * injects a Content-Security-Policy and the platform shim (native/shim-<target>.js)
 // Output: android -> ../android/app/src/main/assets/   windows -> ../windows/app-web/
-import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, copyFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -49,10 +49,30 @@ const csp = [
   "frame-src 'none'", "object-src 'none'", "base-uri 'none'", "form-action 'self'",
 ].join('; ');
 
-const shim = readFileSync(join(root, `native/shim-${target}.js`), 'utf8');
-if (/<\/script/i.test(shim)) throw new Error('shim must not contain </script');
+const read = (f) => readFileSync(join(root, f), 'utf8');
+const scripts = ['native/common.js', `native/shim-${target}.js`, 'native/ui.js'].map(read);
+for (const sc of scripts) if (/<\/script/i.test(sc)) throw new Error('native script must not contain </script');
 html = replaceOnce(html, '<meta charset="utf-8">',
-  `<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="${csp}">\n<script>\n${shim}\n</script>`);
+  `<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="${csp}">\n<script>\n${scripts.join('\n;\n')}\n</script>`);
+
+// 2. Persistent auth storage (session survives restart; idle cut-off lives in native/common.js)
+html = replaceOnce(html, 'storage:window.sessionStorage', 'storage:(window.__mcAuthStorage||window.sessionStorage)');
+
+// 3. Edge Functions via the native HTTPS stack (falls back to supabase-js when no native bridge exists)
+html = replaceOnce(html,
+  'await SB.functions.invoke(EDGE[name],{body:data||{}});',
+  'await (window.__mcEdgeNative?window.__mcEdgeInvoke(EDGE[name],data||{},SUPABASE_KEY):SB.functions.invoke(EDGE[name],{body:data||{}}));');
+
+// 4. Bound the serial line buffer (a reader that never sends "\n" must not grow memory forever)
+html = replaceOnce(html,
+  'serialBuffer+=new TextDecoder().decode(value);',
+  'serialBuffer+=new TextDecoder().decode(value);if(serialBuffer.length>2048)serialBuffer=serialBuffer.slice(-512);');
+
+// 5. Native design language + startup splash (markup first in <body>, shown once per launch)
+const css = ['native/theme.css', `native/${target}.css`].map(read).join('\n');
+const logo = '<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="mcsg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b8cff"/><stop offset="1" stop-color="#1747b8"/></linearGradient></defs><rect width="64" height="64" rx="16" fill="url(#mcsg)"/><rect x="14" y="12" width="36" height="40" rx="6" fill="#fff" opacity=".96"/><path d="M29 19h6v7h7v6h-7v7h-6v-7h-7v-6h7z" fill="#1747b8"/><path d="M18 45h8l3-5 4 9 3-6 2 2h8" fill="none" stroke="#3b8cff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const splash = `<div id="mcSplash" role="status" aria-label="Loading Medical Card"><div class="mc-mark"><span class="mc-ring"></span><span class="mc-ring r2"></span><span class="mc-scan"></span>${logo}</div><h1>MEDICAL CARD</h1><p>EMERGENCY MEDICAL RECORDS</p><div class="mc-bar"><i></i></div></div>`;
+html = replaceOnce(html, '</head><body>', `<style id="mc-native">${css}</style></head><body>${splash}`);
 
 rmSync(outDir, { recursive: true, force: true });
 mkdirSync(join(outDir, 'vendor'), { recursive: true });
@@ -65,6 +85,13 @@ if (stub) {
   console.warn('WARNING: --stub-vendor used. This output is for tests only.');
 } else {
   if (!existsSync(join(here, 'node_modules/@supabase/supabase-js'))) {
+    // Offline fallback: the pinned supabase-js 2.45.4 ESM bundle that shipped in the previous APK.
+    if (existsSync(join(here, 'vendor/supabase.js'))) {
+      copyFileSync(join(here, 'vendor/supabase.js'), vendorOut);
+      console.warn('NOTE: node_modules missing; used tools/vendor/supabase.js (pinned 2.45.4 bundle).');
+      console.log(`Built ${target} web bundle -> ${outDir}`);
+      process.exit(0);
+    }
     console.error('Run "npm install" in tools/ first (needs the npm registry).');
     process.exit(1);
   }

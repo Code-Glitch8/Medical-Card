@@ -9,6 +9,13 @@
   'use strict';
   var d = window.__mcDesktop;
   if (!d || typeof d.prompt !== 'function') return;
+  window.__mcPlatform = 'windows';
+  // Edge Functions through Electron's main-process network stack (no browser CORS/Origin involved).
+  window.__mcEdgeNative = function (fn, body, apikey, timeoutMs) { return d.edge(fn, JSON.stringify(body), apikey, timeoutMs); };
+  if (typeof d.onWindowState === 'function') d.onWindowState(function (st) {
+    document.documentElement.classList.toggle('mc-maximized', !!st.maximized);
+    document.documentElement.classList.toggle('mc-fullscreen', !!st.fullscreen);
+  });
   window.prompt = function (message, def) {
     var r = d.prompt(String(message == null ? '' : message), def == null ? '' : String(def));
     return typeof r === 'string' ? r : null;       // null = cancelled, same as a browser
