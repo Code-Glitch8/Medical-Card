@@ -9,6 +9,14 @@ const b64u = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
 const jwt = () => `${b64u({ alg: 'HS256', typ: 'JWT' })}.${b64u({ sub: 'u1', role: 'authenticated', aud: 'authenticated', exp: Math.floor(Date.now() / 1000) + 3600, email: 'a@b.co' })}.sig`;
 const USER = { id: 'u1', aud: 'authenticated', role: 'authenticated', email: 'a@b.co', app_metadata: {}, user_metadata: {}, created_at: '2026-01-01T00:00:00Z' };
 
+// The pages ship a strict CSP without 'unsafe-eval', which blocks Playwright's function-polling wait in some versions
+// (CI uses 1.49.1). Poll with page.evaluate instead (CDP callFunctionOn, not subject to the page CSP).
+async function waitFor(page, fn, timeout = 15000) {
+  const end = Date.now() + timeout;
+  while (Date.now() < end) { if (await page.evaluate(fn)) return; await new Promise((r) => setTimeout(r, 100)); }
+  throw new Error('waitFor timed out');
+}
+
 async function mockSupabase(ctx, seen) {
   await ctx.route('https://pkzzktnxiboottirasvc.supabase.co/**', (route) => {
     const u = route.request().url(); seen.push(route.request().method() + ' ' + u.replace(/^https:\/\/[^/]+/, ''));
@@ -55,7 +63,7 @@ async function mockSupabase(ctx, seen) {
 
     // wrong password: clear error, nothing leaves via browser fetch to /functions/v1
     await page.fill('#loginId', 'CITY-GEN-01'); await page.fill('#loginPass', 'wrong'); await page.click('#loginSubmit');
-    await page.waitForFunction(() => !document.getElementById('loginError').classList.contains('hidden'));
+    await waitFor(page, () => !document.getElementById('loginError').classList.contains('hidden'));
     const err = await page.textContent('#loginError');
     ok(/incorrect|password/i.test(err), 'android: wrong Login ID password shows clear error: ' + err.trim());
     ok(!seen.some(s => s.includes('/functions/v1/')), 'android: Login ID call did NOT go through the browser (no CORS path)');
@@ -93,7 +101,7 @@ async function mockSupabase(ctx, seen) {
     await p4.addInitScript(() => { window.__edgeReply = (m) => ({ ev: 'edge', id: m.id, error: 'network' }); });
     await p4.goto(androidUrl); await p4.waitForSelector('#loginView:not(.hidden)');
     await p4.fill('#loginId', 'CITY-GEN-01'); await p4.fill('#loginPass', 'x'); await p4.click('#loginSubmit');
-    await p4.waitForFunction(() => !document.getElementById('loginError').classList.contains('hidden'));
+    await waitFor(p4, () => !document.getElementById('loginError').classList.contains('hidden'));
     ok(/temporarily unavailable|internet|reach/i.test(await p4.textContent('#loginError')), 'android: network failure -> readable error, no crash');
     ok(errors.length === 0, 'android: no uncaught page errors' + (errors[0] ? ': ' + errors[0] : ''));
     ok(csp.length === 0, 'android: no CSP violations' + (csp[0] ? ': ' + csp[0] : ''));
