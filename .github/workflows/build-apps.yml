@@ -2,37 +2,64 @@ name: Build Android APK and Windows installer
 
 on:
   workflow_dispatch:
+    inputs:
+      windows_bundle_tag:
+        description: "GitHub Release tag containing the supplied Windows app ZIP"
+        required: true
+        default: "windows-bundle-v1"
+        type: string
+      windows_bundle_asset:
+        description: "Exact release asset filename"
+        required: true
+        default: "MedVault Secure Medical Records.zip"
+        type: string
   push:
-    tags: ['v*']
+    tags:
+      - "v*"
 
 permissions:
   contents: read
 
 jobs:
   web-checks:
+    name: Build and test web bundles
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Install web build tools
-        run: npm install --no-audit --no-fund
         working-directory: tools
-      - name: Build both web bundles (real supabase-js, pinned 2.45.4)
+        run: npm install --no-audit --no-fund
+
+      - name: Build Android and Windows web bundles
         working-directory: tools
         run: |
           node build-web.mjs android
           node build-web.mjs windows
-      - name: Scan for non-anon Supabase keys
+
+      - name: Scan source and web bundles for non-anon Supabase keys
         working-directory: tools
-        run: node check-no-secrets.mjs ../android/app/src/main/assets ../windows/app-web ../web ../android/app/src ../windows/src
-      - name: Syntax-check shims and Electron sources
+        run: |
+          node check-no-secrets.mjs \
+            ../android/app/src/main/assets \
+            ../windows/app-web \
+            ../web \
+            ../android/app/src
+
+      - name: Syntax-check native bridge and browser tests
         run: |
           node --check native/shim-android.js
           node --check native/shim-windows.js
-          for f in windows/src/*.cjs windows/src/dialog.js; do node --check "$f"; done
+          node --check native/test/shim-android.test.cjs
+          node --check native/test/app.test.cjs
 
-      - name: Browser tests against the built bundles (fake native bridges, mocked Supabase)
+      - name: Run browser tests with mocked native bridges and Supabase
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.49.1
           npx playwright install --with-deps chromium
@@ -43,34 +70,52 @@ jobs:
           node native/test/app.test.cjs http://127.0.0.1:8801/index.html http://127.0.0.1:8802/index.html
 
   android:
+    name: Build Android APK
     needs: web-checks
     runs-on: ubuntu-latest
     env:
       HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_B64 != '' }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: 17 }
-      - name: Build web bundle for Android
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Build Android web bundle
         working-directory: tools
         run: |
           npm install --no-audit --no-fund
           node build-web.mjs android
+
       - name: Make Gradle wrapper executable
         working-directory: android
         run: chmod +x ./gradlew
+
       - name: Assemble debug APK
         working-directory: android
         run: ./gradlew --no-daemon assembleDebug
-      - name: Name the artifact
+
+      - name: Name debug APK
         run: cp android/app/build/outputs/apk/debug/app-debug.apk MedVault-Secure-Medical-Records-debug.apk
-      - uses: actions/upload-artifact@v4
-        with: { name: MedVault-Secure-Medical-Records-android-debug, path: MedVault-Secure-Medical-Records-debug.apk }
-      # Release signing (optional): add repository secrets ANDROID_KEYSTORE_B64 (base64 of the .jks),
-      # ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD. Without them only the debug APK is built.
-      - name: Assemble signed release APK (only if secrets exist)
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MedVault-Secure-Medical-Records-android-debug
+          path: MedVault-Secure-Medical-Records-debug.apk
+
+      # Optional production signing. Add the four ANDROID_KEYSTORE_* repository secrets
+      # only when you have the original release signing keystore.
+      - name: Assemble signed release APK
         if: ${{ env.HAS_KEYSTORE == 'true' }}
         working-directory: android
         env:
@@ -83,29 +128,142 @@ jobs:
           printf 'storeFile=release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "$KS_PASS" "$KS_ALIAS" "$KS_KEYPASS" > keystore.properties
           ./gradlew --no-daemon assembleRelease
           cp app/build/outputs/apk/release/app-release.apk ../MedVault-Secure-Medical-Records.apk
-      - uses: actions/upload-artifact@v4
+
+      - name: Upload signed release APK
         if: ${{ hashFiles('MedVault-Secure-Medical-Records.apk') != '' }}
-        with: { name: MedVault-Secure-Medical-Records-release, path: MedVault-Secure-Medical-Records.apk }
+        uses: actions/upload-artifact@v4
+        with:
+          name: MedVault-Secure-Medical-Records-android-release
+          path: MedVault-Secure-Medical-Records.apk
 
   windows:
-    needs: web-checks
+    name: Build Windows installer from the supplied EXE
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - name: Install web build tools and build bundle
-        working-directory: tools
-        run: |
-          npm install --no-audit --no-fund
-          node build-web.mjs windows
-      - name: Build installer
-        working-directory: windows
-        run: |
-          npm install --no-audit --no-fund
-          npx electron-builder --win nsis --x64
-          node ../tools/verify-asar.mjs dist/win-unpacked/resources/app.asar
+      - name: Check out installer configuration
+        uses: actions/checkout@v4
+
+      - name: Download the exact supplied Windows application bundle
+        shell: pwsh
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: "false"   # unsigned unless you add a code-signing certificate (see docs)
-      - uses: actions/upload-artifact@v4
-        with: { name: MedVault-Secure-Medical-Records-windows, path: windows/dist/MedVault-Secure-Medical-Records-Setup.exe }
+          GH_TOKEN: ${{ github.token }}
+          BUNDLE_TAG: ${{ inputs.windows_bundle_tag || 'windows-bundle-v1' }}
+          BUNDLE_ASSET: ${{ inputs.windows_bundle_asset || 'MedVault Secure Medical Records.zip' }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $downloadDir = Join-Path $env:RUNNER_TEMP 'medvault-windows-download'
+          $extractDir = Join-Path $env:RUNNER_TEMP 'medvault-windows-extracted'
+          New-Item -ItemType Directory -Force -Path $downloadDir | Out-Null
+          New-Item -ItemType Directory -Force -Path $extractDir | Out-Null
+
+          gh release download "$env:BUNDLE_TAG" `
+            --repo "$env:GITHUB_REPOSITORY" `
+            --pattern "$env:BUNDLE_ASSET" `
+            --dir "$downloadDir"
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "Could not download asset '$env:BUNDLE_ASSET' from release '$env:BUNDLE_TAG'. Check the tag and asset name."
+          }
+
+          $zipPath = Join-Path $downloadDir $env:BUNDLE_ASSET
+          if (-not (Test-Path -LiteralPath $zipPath)) {
+            throw "The release does not contain the exact asset '$env:BUNDLE_ASSET'."
+          }
+
+          Expand-Archive -LiteralPath $zipPath -DestinationPath $extractDir -Force
+
+          $exeFiles = @(Get-ChildItem -LiteralPath $extractDir -Filter 'MedVault Secure Medical Records.exe' -File -Recurse)
+          if ($exeFiles.Count -ne 1) {
+            throw "Expected exactly one 'MedVault Secure Medical Records.exe'; found $($exeFiles.Count). Upload the original complete app ZIP."
+          }
+
+          $appDir = $exeFiles[0].DirectoryName
+          $required = @(
+            'resources\app.asar',
+            'resources.pak',
+            'icudtl.dat',
+            'locales'
+          )
+          foreach ($relativePath in $required) {
+            if (-not (Test-Path -LiteralPath (Join-Path $appDir $relativePath))) {
+              throw "The supplied Windows app folder is incomplete. Missing: $relativePath"
+            }
+          }
+
+          $version = $exeFiles[0].VersionInfo.ProductVersion
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            $version = $exeFiles[0].VersionInfo.FileVersion
+          }
+          $match = [regex]::Match([string]$version, '\d+\.\d+\.\d+')
+          if ($match.Success) {
+            $version = $match.Value
+          } else {
+            $version = '1.1.0'
+          }
+
+          $exeHash = (Get-FileHash -LiteralPath $exeFiles[0].FullName -Algorithm SHA256).Hash
+          "APP_SOURCE_DIR=$appDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "APP_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "APP_EXE_SHA256=$exeHash" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+          Write-Host "Using exact supplied EXE: $($exeFiles[0].FullName)"
+          Write-Host "EXE SHA-256: $exeHash"
+          Write-Host "App version: $version"
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          choco install innosetup --yes --no-progress
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Inno Setup installation failed.'
+          }
+
+          $iscc = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path -LiteralPath $iscc)) {
+            $iscc = Join-Path $env:ProgramFiles 'Inno Setup 6\ISCC.exe'
+          }
+          if (-not (Test-Path -LiteralPath $iscc)) {
+            throw 'ISCC.exe was not found after installing Inno Setup.'
+          }
+          "ISCC_PATH=$iscc" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Create installer from the unchanged supplied app folder
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $outputDir = Join-Path $env:GITHUB_WORKSPACE 'installer\dist'
+          New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
+
+          & $env:ISCC_PATH `
+            "/DSourceDir=$env:APP_SOURCE_DIR" `
+            "/DOutputDir=$outputDir" `
+            "/DAppVersion=$env:APP_VERSION" `
+            (Join-Path $env:GITHUB_WORKSPACE 'installer\windows\MedVault.iss')
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "Inno Setup failed with exit code $LASTEXITCODE."
+          }
+
+          $installerPath = Join-Path $outputDir 'MedVault-Secure-Medical-Records-Setup.exe'
+          if (-not (Test-Path -LiteralPath $installerPath)) {
+            throw "Installer output was not created: $installerPath"
+          }
+
+          @"
+          Source release tag: ${{ inputs.windows_bundle_tag || 'windows-bundle-v1' }}
+          Source asset: ${{ inputs.windows_bundle_asset || 'MedVault Secure Medical Records.zip' }}
+          Original executable: MedVault Secure Medical Records.exe
+          Original executable SHA-256: $env:APP_EXE_SHA256
+          Packaged application version: $env:APP_VERSION
+          The installer copies the original application folder; it does not rebuild the Windows executable.
+          "@ | Set-Content -Path (Join-Path $outputDir 'Windows-Bundle-Source.txt') -Encoding utf8
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: MedVault-Secure-Medical-Records-windows-installer
+          path: |
+            installer/dist/MedVault-Secure-Medical-Records-Setup.exe
+            installer/dist/Windows-Bundle-Source.txt
