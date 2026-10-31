@@ -54,3 +54,54 @@ html.mc-app th{position:sticky;top:0}
 @keyframes mcBar{from{transform:translateX(-120%)}to{transform:translateX(360%)}}
 @media(prefers-reduced-motion:reduce){#mcSplash .mc-ring,#mcSplash .mc-scan,#mcSplash .mc-bar i{animation:none}#mcSplash *{animation-duration:.01s!important;animation-delay:0s!important}#main.mc-enter{animation:none}}
 html.mc-app .appbar button.secondary{background:#ffffff1f;color:#e6efff}html.mc-app .appbar button.secondary:hover{background:#ffffff33}
+
+/* Layout safety: keep form controls and text inside their cards on narrow screens. */
+html.mc-app #main > *,
+html.mc-app #main .grid,
+html.mc-app #main .formgrid,
+html.mc-app #main .card,
+html.mc-app .field {
+  min-width: 0;
+}
+html.mc-app #main .card {
+  overflow: visible;
+}
+html.mc-app .tablewrap {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+html.mc-app .field label,
+html.mc-app .hint,
+html.mc-app .notice,
+html.mc-app .tiny {
+  overflow-wrap: anywhere;
+}
+html.mc-app .field input,
+html.mc-app .field select,
+html.mc-app .field textarea {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+html.mc-app .form-actions {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  transform: none;
+}
+html.mc-app .form-actions > button {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+html.mc-app .pagehead,
+html.mc-app .pagehead > div,
+html.mc-app .actions {
+  min-width: 0;
+}
+html.mc-app .actions > button {
+  max-width: 100%;
+  white-space: normal;
+}

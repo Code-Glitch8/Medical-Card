@@ -1,0 +1,16 @@
+Open android/app/src/main/kotlin/com/medicalcard/app/MainActivity.kt.
+
+Find this existing line inside ViewCompat.setOnApplyWindowInsetsListener:
+
+    val i = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime())
+
+Replace ONLY that line with these two lines:
+
+    val safeAreas = WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.ime()
+    val i = insets.getInsets(safeAreas)
+
+Leave the following line unchanged:
+
+    v.setPadding(i.left, i.top, i.right, i.bottom)
+
+This adds display-cutout safe insets without changing the existing keyboard or system-bar handling.

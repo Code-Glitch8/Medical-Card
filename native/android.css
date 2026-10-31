@@ -1,13 +1,15 @@
 /* Android: phone-first. Bottom navigation, compact top bar, big touch targets, no sidebar. */
-html.mc-android body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+html.mc-android body{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px));min-height:100%;overscroll-behavior-y:contain}
 html.mc-android.mc-kb body{padding-bottom:0}
-html.mc-android .appbar{position:sticky;top:0;z-index:30;padding:10px 14px;flex-wrap:wrap;gap:8px;border-radius:0 0 20px 20px;box-shadow:0 6px 20px #0a162855}
-html.mc-android .appbar .brand{font-size:15px;min-width:0;flex:1}
-html.mc-android .appbar .brand>div:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html.mc-android .appbar{position:sticky;top:0;z-index:30;padding:12px 14px;flex-wrap:wrap;gap:9px;border-radius:0 0 20px 20px;box-shadow:0 6px 20px #0a162855}
+html.mc-android .appbar .brand{font-size:15px;min-width:0;flex:1 1 100%;align-items:center}
+html.mc-android .appbar .brand>div:last-child{min-width:0;flex:1 1 auto;overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere;line-height:1.3}
+html.mc-android #hospitalName{display:block;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+html.mc-android .appbar .tagline{display:block;white-space:normal;overflow-wrap:anywhere;line-height:1.25}
 html.mc-android .appbar .row{width:100%;margin-left:0;display:flex;align-items:center;gap:8px;justify-content:space-between}
 html.mc-android #baudSelect{display:none}
 html.mc-android #lockBtn{margin-left:auto}
-html.mc-android #main{padding:16px 14px 24px;min-height:0}
+html.mc-android #main{padding:24px 16px 42px;min-height:0;scroll-padding-block:24px}
 html.mc-android .pagehead h1{font-size:22px}
 html.mc-android .footer{display:none}
 html.mc-android .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px));left:12px;right:12px;max-width:none}
@@ -21,6 +23,10 @@ html.mc-android #mainNav button.mc-active .mc-ico{transform:translateY(-1px) sca
 html.mc-android #mainNav .mc-ico{transition:transform .2s var(--mc-ease)}
 html.mc-android #mainNav .mc-lbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 html.mc-android #appView.hidden~#mainNav{display:none}
-html.mc-android .form-actions{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom,0px));background:linear-gradient(0deg,var(--bg) 70%,transparent);padding-top:10px}
-html.mc-android.mc-kb .form-actions{bottom:0}
+html.mc-android .form-actions{position:static;inset:auto;display:flex;flex-wrap:wrap;align-items:stretch;justify-content:flex-start;gap:10px;margin:18px 0 4px;padding:0;background:none;box-shadow:none}
+html.mc-android .form-actions>button{flex:1 1 150px;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+html.mc-android #hospitalForm .formgrid{gap:15px}
+html.mc-android #hospitalForm .field{min-width:0}
+html.mc-android #hospitalForm .tiny{display:block;margin:12px 0 0;line-height:1.5;overflow-wrap:anywhere}
+html.mc-android.mc-kb .toast{bottom:12px}
 html.mc-android input,html.mc-android select,html.mc-android textarea{font-size:16px}
