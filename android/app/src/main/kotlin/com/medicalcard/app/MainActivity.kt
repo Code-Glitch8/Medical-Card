@@ -17,6 +17,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Base64
+import android.util.Log
 import android.view.Gravity
 import android.view.ViewGroup
 import android.view.WindowManager
@@ -56,7 +57,7 @@ import java.util.concurrent.Executors
 import javax.net.ssl.HttpsURLConnection
 
 /**
- * Hosts the Medical Card web app (bundled in assets/, served from https://appassets.androidplatform.net)
+ * Hosts the MedVault Secure Medical Records web app (bundled in assets/, served from https://appassets.androidplatform.net)
  * in a locked-down WebView. Patient data is never stored by this app: all reads/writes go to Supabase
  * through the page's existing RPC wrappers.
  */
@@ -89,6 +90,18 @@ class MainActivity : ComponentActivity() {
     private var afterEnable: (() -> Unit)? = null
 
     /** Android tells us when the link drops or Bluetooth is switched off, faster than a socket read fails. */
+    private var btReceiverRegistered = false
+    /** Registered only when the user first uses Bluetooth, not at startup. */
+    private fun registerBtReceiver() {
+        if (btReceiverRegistered) return
+        try {
+            ContextCompat.registerReceiver(this, btReceiver,
+                IntentFilter().apply { addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED); addAction(BluetoothAdapter.ACTION_STATE_CHANGED) },
+                ContextCompat.RECEIVER_NOT_EXPORTED)
+            btReceiverRegistered = true
+        } catch (t: Exception) { Log.w(TAG, "Bluetooth receiver not registered: ${t.javaClass.simpleName}") }
+    }
+
     private val btReceiver = object : BroadcastReceiver() {
         @SuppressLint("MissingPermission")
         override fun onReceive(c: Context, i: Intent) {
@@ -107,10 +120,26 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Suppress("DEPRECATION")
-    @SuppressLint("SetJavaScriptEnabled") // required: the app IS a JavaScript web app; origin is locked below
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // A startup failure must show a readable message, never a silent close behind the splash.
+        try { initUi() } catch (t: Throwable) { showStartupError(t) }
+    }
+
+    /** Logs only the exception type and message (never page content, tokens or medical data) and shows it on screen. */
+    private fun showStartupError(t: Throwable) {
+        Log.e(TAG, "Startup failure: ${t.javaClass.name}: ${t.message}")
+        val pad = (24 * resources.displayMetrics.density).toInt()
+        val tv = TextView(this).apply {
+            text = "MedVault Secure Medical Records could not start.\n\n${t.javaClass.simpleName}: ${t.message ?: ""}\n\nPlease update Android System WebView and reopen the app."
+            setTextColor(0xFFFFFFFF.toInt()); setBackgroundColor(0xFF0A1628.toInt()); textSize = 16f; setPadding(pad, pad * 2, pad, pad)
+        }
+        setContentView(tv)
+    }
+
+    @Suppress("DEPRECATION")
+    @SuppressLint("SetJavaScriptEnabled") // required: the app IS a JavaScript web app; origin is locked below
+    private fun initUi() {
 
         // Medical data: block screenshots, screen recording and the recents-screen thumbnail.
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
@@ -161,8 +190,25 @@ class MainActivity : ComponentActivity() {
                 }
 
                 override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
-                    Toast.makeText(this@MainActivity, "The app view stopped unexpectedly. Please reopen the app.", Toast.LENGTH_LONG).show()
-                    finish(); return true
+                    Log.e(TAG, "WebView renderer gone, crashed=${detail.didCrash()}")
+                    if (!isFinishing) AlertDialog.Builder(this@MainActivity)
+                        .setMessage("The app view stopped unexpectedly.")
+                        .setPositiveButton("Reopen") { _, _ -> recreate() }
+                        .setNegativeButton("Close") { _, _ -> finish() }
+                        .setCancelable(false).show()
+                    return true
+                }
+
+                override fun onReceivedError(view: WebView, request: WebResourceRequest, error: android.webkit.WebResourceError) {
+                    if (request.isForMainFrame) {
+                        Log.e(TAG, "Main frame failed to load: code=${error.errorCode} ${error.description}")
+                        showStartupError(IOException("Could not load the bundled app (${error.description})"))
+                    }
+                }
+
+                override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, errorResponse: WebResourceResponse) {
+                    if (request.isForMainFrame || request.url.path?.endsWith(".js") == true)
+                        Log.e(TAG, "Asset request failed: ${request.url.path} -> ${errorResponse.statusCode}")
                 }
             }
             webChromeClient = dialogsChromeClient()
@@ -171,14 +217,12 @@ class MainActivity : ComponentActivity() {
 
         val adapter = btAdapter()
         if (adapter != null) {
-            bt = BtSerial(adapter,
-                onData = { bytes -> emit(JSONObject().put("ev", "data").put("b64", Base64.encodeToString(bytes, Base64.NO_WRAP))) },
-                onLost = { msg -> emit(JSONObject().put("ev", "closed").put("error", msg)) })
+            try {
+                bt = BtSerial(adapter,
+                    onData = { bytes -> emit(JSONObject().put("ev", "data").put("b64", Base64.encodeToString(bytes, Base64.NO_WRAP))) },
+                    onLost = { msg -> emit(JSONObject().put("ev", "closed").put("error", msg)) })
+            } catch (t: Exception) { Log.w(TAG, "Bluetooth serial unavailable: ${t.javaClass.simpleName}") }
         }
-
-        ContextCompat.registerReceiver(this, btReceiver,
-            IntentFilter().apply { addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED); addAction(BluetoothAdapter.ACTION_STATE_CHANGED) },
-            ContextCompat.RECEIVER_NOT_EXPORTED)
 
         // The native bridge exists ONLY for the app's own origin and only in the main frame.
         if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
@@ -201,6 +245,8 @@ class MainActivity : ComponentActivity() {
             }
         })
 
+        try { assets.open("index.html").close() }
+        catch (e: IOException) { showStartupError(e); return }
         webView.loadUrl("https://$HOST/index.html")
     }
 
@@ -233,6 +279,7 @@ class MainActivity : ComponentActivity() {
 
     /** Runs [then] once BLUETOOTH_CONNECT is granted AND the adapter is on; otherwise explains and offers the fix. */
     private fun ensureReady(then: () -> Unit) = runOnUiThread {
+        registerBtReceiver()
         if (btAdapter() == null) { pickFailed("This device has no Bluetooth."); return@runOnUiThread }
         ensureBluetoothConnectPermission {
             if (btAdapter()?.isEnabled == true) then()
@@ -262,7 +309,7 @@ class MainActivity : ComponentActivity() {
                     try { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))) } catch (_: ActivityNotFoundException) {}
                 }
         } else {
-            b.setMessage("Medical Card only uses Bluetooth to talk to the paired RFID reader (HC-05). Nothing is scanned and your location is not used.")
+            b.setMessage("MedVault Secure Medical Records only uses Bluetooth to talk to the paired RFID reader (HC-05). Nothing is scanned and your location is not used.")
                 .setPositiveButton("Try again") { _, _ -> afterPermission = retry; permissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT) }
         }
         b.setNegativeButton("Cancel") { _, _ -> pickFailed("Bluetooth permission was denied.") }.show()
@@ -406,15 +453,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         hideProgress()
-        try { unregisterReceiver(btReceiver) } catch (_: IllegalArgumentException) {}
+        if (btReceiverRegistered) try { unregisterReceiver(btReceiver) } catch (_: IllegalArgumentException) {}
         bt?.shutdown()
         edgeExecutor.shutdownNow()
         reply = null
-        webView.apply { loadUrl("about:blank"); clearHistory(); clearCache(true); removeAllViews(); destroy() }
+        if (::webView.isInitialized) webView.apply { loadUrl("about:blank"); clearHistory(); clearCache(true); removeAllViews(); destroy() }
         super.onDestroy()
     }
 
     companion object {
+        private const val TAG = "MedVault"
         private const val HOST = "appassets.androidplatform.net"
         private const val SUPABASE_URL = "https://pkzzktnxiboottirasvc.supabase.co"
         private val EDGE_FUNCTIONS = setOf("register-hospital", "login-with-id", "request-password-reset")

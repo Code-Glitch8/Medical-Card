@@ -1,6 +1,6 @@
 <resources>
     <!-- Dark navy window shown instantly at launch (pre-Android 12 splash); the web view's own splash continues it. -->
-    <style name="Theme.MedicalCard" parent="android:Theme.Material.NoActionBar">
+    <style name="Theme.MedVault" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@drawable/splash_window</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>

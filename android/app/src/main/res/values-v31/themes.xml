@@ -1,6 +1,6 @@
 <resources>
     <!-- Android 12+ system splash: same navy + logo, so the hand-over to the in-app animation is seamless. -->
-    <style name="Theme.MedicalCard" parent="android:Theme.Material.NoActionBar">
+    <style name="Theme.MedVault" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/window_bg</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>

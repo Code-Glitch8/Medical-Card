@@ -65,9 +65,9 @@ jobs:
         working-directory: android
         run: ./gradlew --no-daemon assembleDebug
       - name: Name the artifact
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk MedicalCard-debug.apk
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk MedVault-Secure-Medical-Records-debug.apk
       - uses: actions/upload-artifact@v4
-        with: { name: MedicalCard-debug-apk, path: MedicalCard-debug.apk }
+        with: { name: MedVault-Secure-Medical-Records-android-debug, path: MedVault-Secure-Medical-Records-debug.apk }
       # Release signing (optional): add repository secrets ANDROID_KEYSTORE_B64 (base64 of the .jks),
       # ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD. Without them only the debug APK is built.
       - name: Assemble signed release APK (only if secrets exist)
@@ -82,10 +82,10 @@ jobs:
           echo "$KS_B64" | base64 -d > release.jks
           printf 'storeFile=release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "$KS_PASS" "$KS_ALIAS" "$KS_KEYPASS" > keystore.properties
           ./gradlew --no-daemon assembleRelease
-          cp app/build/outputs/apk/release/app-release.apk ../MedicalCard.apk
+          cp app/build/outputs/apk/release/app-release.apk ../MedVault-Secure-Medical-Records.apk
       - uses: actions/upload-artifact@v4
-        if: ${{ hashFiles('MedicalCard.apk') != '' }}
-        with: { name: MedicalCard-release-apk, path: MedicalCard.apk }
+        if: ${{ hashFiles('MedVault-Secure-Medical-Records.apk') != '' }}
+        with: { name: MedVault-Secure-Medical-Records-release, path: MedVault-Secure-Medical-Records.apk }
 
   windows:
     needs: web-checks
@@ -104,7 +104,8 @@ jobs:
         run: |
           npm install --no-audit --no-fund
           npx electron-builder --win nsis --x64
+          node ../tools/verify-asar.mjs dist/win-unpacked/resources/app.asar
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"   # unsigned unless you add a code-signing certificate (see docs)
       - uses: actions/upload-artifact@v4
-        with: { name: MedicalCardSetup-exe, path: windows/dist/MedicalCardSetup.exe }
+        with: { name: MedVault-Secure-Medical-Records-windows, path: windows/dist/MedVault-Secure-Medical-Records-Setup.exe }

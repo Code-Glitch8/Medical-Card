@@ -1,4 +1,4 @@
-/* Shared Medical Card native design language: dark navy + blue, rounded cards, soft shadows. */
+/* Shared MedVault native design language: dark navy + blue, rounded cards, soft shadows. */
 :root{--teal:#2563eb;--teal2:#e3edff;--navy:#0f2140;--bg:#eef3fb;--line:#d9e3f2;--shadow:0 6px 24px #0a162814,0 1px 3px #0a16280d;--mc-nav:#0a1628;--mc-nav2:#12264a;--mc-acc:#3b8cff;--mc-ease:cubic-bezier(.2,.8,.2,1)}
 :root.dark-theme{--teal:#4da3ff;--teal2:#10294d;--navy:#dbe7ff;--bg:#070f1d;--white:#0e1b33;--line:#22365a;--shadow:0 8px 28px #0000004d}
 html.mc-app{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}

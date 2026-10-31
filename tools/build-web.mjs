@@ -24,6 +24,11 @@ const outDir = target === 'android'
 
 let html = readFileSync(join(root, 'web/index.html'), 'utf8');
 
+// The website carries its own startup splash (between <!--mc-web-splash-start/end--> markers). The native
+// bundles inject the native splash below, so remove the website copy first to avoid a duplicate #mcSplash.
+html = html.replace(/<!--mc-web-splash-start-->[\s\S]*?<!--mc-web-splash-end-->/g, '');
+if (/id="mcSplash"/.test(html)) throw new Error('website splash was not fully stripped');
+
 function replaceOnce(src, needle, replacement) {
   const first = src.indexOf(needle);
   if (first < 0 || src.indexOf(needle, first + 1) >= 0) {
@@ -71,7 +76,7 @@ html = replaceOnce(html,
 // 5. Native design language + startup splash (markup first in <body>, shown once per launch)
 const css = ['native/theme.css', `native/${target}.css`].map(read).join('\n');
 const logo = '<svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="mcsg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b8cff"/><stop offset="1" stop-color="#1747b8"/></linearGradient></defs><rect width="64" height="64" rx="16" fill="url(#mcsg)"/><rect x="14" y="12" width="36" height="40" rx="6" fill="#fff" opacity=".96"/><path d="M29 19h6v7h7v6h-7v7h-6v-7h-7v-6h7z" fill="#1747b8"/><path d="M18 45h8l3-5 4 9 3-6 2 2h8" fill="none" stroke="#3b8cff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const splash = `<div id="mcSplash" role="status" aria-label="Loading Medical Card"><div class="mc-mark"><span class="mc-ring"></span><span class="mc-ring r2"></span><span class="mc-scan"></span>${logo}</div><h1>MEDICAL CARD</h1><p>EMERGENCY MEDICAL RECORDS</p><div class="mc-bar"><i></i></div></div>`;
+const splash = `<div id="mcSplash" role="status" aria-label="Loading MedVault Secure Medical Records"><div class="mc-mark"><span class="mc-ring"></span><span class="mc-ring r2"></span><span class="mc-scan"></span>${logo}</div><h1>MEDVAULT SECURE MEDICAL RECORDS</h1><p>SECURE MEDICAL RECORDS</p><div class="mc-bar"><i></i></div></div>`;
 html = replaceOnce(html, '</head><body>', `<style id="mc-native">${css}</style></head><body>${splash}`);
 
 rmSync(outDir, { recursive: true, force: true });

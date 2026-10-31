@@ -81,7 +81,7 @@
   function windowsChrome() {
     var bar = document.createElement('div');
     bar.id = 'mcTitlebar';
-    bar.innerHTML = '<span class="mc-tb-logo">' + LOGO + '</span><span class="mc-tb-title">Medical Card</span><span class="mc-tb-sub">Emergency Medical Records</span>';
+    bar.innerHTML = '<span class="mc-tb-logo">' + LOGO + '</span><span class="mc-tb-title">MedVault Secure Medical Records</span><span class="mc-tb-sub">SECURE MEDICAL RECORDS</span>';
     document.body.appendChild(bar);
     document.addEventListener('keydown', function (e) {
       if (!e.ctrlKey || e.altKey) return;
