@@ -1,7 +1,9 @@
 /* Android: phone-first. Bottom navigation, compact top bar, big touch targets, no sidebar. */
-html.mc-android body{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px));min-height:100%;overscroll-behavior-y:contain}
+/* Native Android insets are applied by MainActivity. The extra CSS spacing below is intentional visual breathing room, not a replacement for system insets. */
+html.mc-android body{padding-bottom:108px;min-height:100%;overscroll-behavior-y:contain}
 html.mc-android.mc-kb body{padding-bottom:0}
-html.mc-android .appbar{position:sticky;top:0;z-index:30;padding:12px 14px;flex-wrap:wrap;gap:9px;border-radius:0 0 20px 20px;box-shadow:0 6px 20px #0a162855}
+/* Top breathing room keeps the hospital name and controls visually below the camera/status area. The appbar gradient matches the navy native safe-area background. */
+html.mc-android .appbar{position:sticky;top:0;z-index:30;padding:22px 14px 12px;flex-wrap:wrap;gap:9px;border-radius:0 0 20px 20px;box-shadow:0 6px 20px #0a162855}
 html.mc-android .appbar .brand{font-size:15px;min-width:0;flex:1 1 100%;align-items:center}
 html.mc-android .appbar .brand>div:last-child{min-width:0;flex:1 1 auto;overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere;line-height:1.3}
 html.mc-android #hospitalName{display:block;max-width:100%;white-space:normal;overflow-wrap:anywhere}
@@ -12,9 +14,10 @@ html.mc-android #lockBtn{margin-left:auto}
 html.mc-android #main{padding:24px 16px 42px;min-height:0;scroll-padding-block:24px}
 html.mc-android .pagehead h1{font-size:22px}
 html.mc-android .footer{display:none}
-html.mc-android .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px));left:12px;right:12px;max-width:none}
+html.mc-android .toast{bottom:104px;left:12px;right:12px;max-width:none}
 html.mc-android .authwrap{padding:14px;gap:14px}
-html.mc-android #mainNav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:space-around;gap:0;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,var(--mc-nav2),var(--mc-nav));border-radius:20px 20px 0 0;box-shadow:0 -6px 24px #0a162888;transition:transform .22s var(--mc-ease)}
+/* Bottom breathing room leaves a navy-colored strip below the tab labels. MainActivity separately insets the WebView above Android's own navigation buttons. */
+html.mc-android #mainNav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:space-around;gap:0;padding:8px 8px 22px;background:linear-gradient(180deg,var(--mc-nav2),var(--mc-nav));border-radius:20px 20px 0 0;box-shadow:0 -6px 24px #0a162888;transition:transform .22s var(--mc-ease)}
 html.mc-android.mc-kb #mainNav{transform:translateY(110%)}
 html.mc-android #mainNav button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 2px;background:none!important;color:#9db8e6;font-size:11px;font-weight:600;border-radius:14px;min-height:54px}
 html.mc-android #mainNav button[hidden]{display:none}

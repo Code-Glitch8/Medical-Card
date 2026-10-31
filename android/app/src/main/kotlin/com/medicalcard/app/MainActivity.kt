@@ -144,6 +144,8 @@ class MainActivity : ComponentActivity() {
         // Medical data: block screenshots, screen recording and the recents-screen thumbnail.
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        // Fill the status-bar and navigation-bar safe areas with the same navy used by the app chrome.
+        window.decorView.setBackgroundColor(getColor(R.color.window_bg))
         WindowCompat.getInsetsController(window, window.decorView).apply {
             isAppearanceLightStatusBars = false          // light icons on the navy status area
             isAppearanceLightNavigationBars = false
@@ -173,18 +175,19 @@ class MainActivity : ComponentActivity() {
                 safeBrowsingEnabled = true
             }
             ViewCompat.setOnApplyWindowInsetsListener(this) { view, windowInsets ->
-                // Keep the WebView content clear of the status bar, navigation bar,
-                // display cutouts (camera/notch), and the on-screen keyboard.
-                val insetTypes = WindowInsetsCompat.Type.systemBars()
+                // Keep the WebView clear of Android's status/navigation bars and camera cutouts.
+                // The keyboard can be taller than the navigation bar, so use the larger bottom inset.
+                val safeInsetTypes = WindowInsetsCompat.Type.systemBars()
                     .or(WindowInsetsCompat.Type.displayCutout())
-                    .or(WindowInsetsCompat.Type.ime())
+                val safeAreas = windowInsets.getInsets(safeInsetTypes)
+                val keyboardBottom = windowInsets.getInsets(WindowInsetsCompat.Type.ime()).bottom
+                val bottomInset = maxOf(safeAreas.bottom, keyboardBottom)
 
-                val safeInsets = windowInsets.getInsets(insetTypes)
                 view.setPadding(
-                    safeInsets.left,
-                    safeInsets.top,
-                    safeInsets.right,
-                    safeInsets.bottom
+                    safeAreas.left,
+                    safeAreas.top,
+                    safeAreas.right,
+                    bottomInset
                 )
 
                 WindowInsetsCompat.CONSUMED
@@ -226,6 +229,8 @@ class MainActivity : ComponentActivity() {
             webChromeClient = dialogsChromeClient()
         }
         setContentView(webView)
+        // Ensure the insets listener is applied after the WebView is attached to the window.
+        ViewCompat.requestApplyInsets(webView)
 
         val adapter = btAdapter()
         if (adapter != null) {
