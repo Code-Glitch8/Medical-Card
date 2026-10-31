@@ -172,10 +172,21 @@ class MainActivity : ComponentActivity() {
                 cacheMode = WebSettings.LOAD_NO_CACHE          // do not keep API responses (patient data) in the HTTP cache
                 safeBrowsingEnabled = true
             }
-            ViewCompat.setOnApplyWindowInsetsListener(this) { v, insets ->
-                al safeAreas = WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.ime()
-                val i = insets.getInsets(safeAreas)
-                v.setPadding(i.left, i.top, i.right, i.bottom)
+            ViewCompat.setOnApplyWindowInsetsListener(this) { view, windowInsets ->
+                // Keep the WebView content clear of the status bar, navigation bar,
+                // display cutouts (camera/notch), and the on-screen keyboard.
+                val insetTypes = WindowInsetsCompat.Type.systemBars()
+                    .or(WindowInsetsCompat.Type.displayCutout())
+                    .or(WindowInsetsCompat.Type.ime())
+
+                val safeInsets = windowInsets.getInsets(insetTypes)
+                view.setPadding(
+                    safeInsets.left,
+                    safeInsets.top,
+                    safeInsets.right,
+                    safeInsets.bottom
+                )
+
                 WindowInsetsCompat.CONSUMED
             }
             webViewClient = object : WebViewClient() {
