@@ -3,7 +3,7 @@
 This package changes the existing GitHub Actions workflow so one manual run produces:
 
 - an Android debug APK (and a signed release APK if the repository signing secrets are configured);
-- a Windows Setup EXE that installs the exact Windows application supplied in `MedVault Secure Medical Records.zip`.
+- a Windows Setup EXE that installs the exact Windows application supplied in `MedVault.Secure.Medical.Records.zip`.
 
 ## Important: upload the Windows app ZIP as a GitHub Release asset first
 
@@ -14,10 +14,12 @@ The supplied ZIP is about 136 MB. Do not commit it into the normal Git repositor
 3. Create the tag `windows-bundle-v1`.
 4. Set the title to `MediVault Windows Base App Bundle`.
 5. Mark it as a **pre-release** so it is kept separate from the public app release.
-6. Attach the original file without renaming it: `MedVault Secure Medical Records.zip`.
+6. Attach the original file without renaming it: `MedVault.Secure.Medical.Records.zip`.
 7. Publish the release.
 
-The workflow expects that exact tag and asset filename by default. If you use another tag or filename, change the inputs when you run the workflow.
+The workflow looks up the release through the GitHub Releases API and checks the asset filename before downloading. It now prints a specific diagnostic if the release is missing or the asset name does not match. The workflow expects that exact tag and asset filename by default. If you use another tag or filename, change the inputs when you run the workflow.
+
+**Important:** The release must be PUBLISHED. Creating only a Git tag, saving a draft, or uploading the ZIP to the repository's normal file list does not create a downloadable Release asset. After publishing, open the release page and verify that `MedVault.Secure.Medical.Records.zip` appears in its Assets list.
 
 ## Add the files in this ZIP to the repository
 

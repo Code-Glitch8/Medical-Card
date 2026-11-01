@@ -11,7 +11,7 @@ on:
       windows_bundle_asset:
         description: "Exact release asset filename"
         required: true
-        default: "MedVault Secure Medical Records.zip"
+        default: "MedVault.Secure.Medical.Records.zip"
         type: string
   push:
     tags:
@@ -148,7 +148,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           BUNDLE_TAG: ${{ inputs.windows_bundle_tag || 'windows-bundle-v1' }}
-          BUNDLE_ASSET: ${{ inputs.windows_bundle_asset || 'MedVault Secure Medical Records.zip' }}
+          BUNDLE_ASSET: ${{ inputs.windows_bundle_asset || 'MedVault.Secure.Medical.Records.zip' }}
         run: |
           $ErrorActionPreference = 'Stop'
 
@@ -253,7 +253,7 @@ jobs:
 
           @"
           Source release tag: ${{ inputs.windows_bundle_tag || 'windows-bundle-v1' }}
-          Source asset: ${{ inputs.windows_bundle_asset || 'MedVault Secure Medical Records.zip' }}
+          Source asset: ${{ inputs.windows_bundle_asset || 'MedVault.Secure.Medical.Records.zip' }}
           Original executable: MedVault Secure Medical Records.exe
           Original executable SHA-256: $env:APP_EXE_SHA256
           Packaged application version: $env:APP_VERSION
